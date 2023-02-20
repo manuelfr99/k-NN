@@ -1,5 +1,6 @@
 import numpy as np 
 import matplotlib.pyplot as plt 
+import pandas as pd 
 
 """
     Defining a k-NN algorithm from scratch. 
@@ -14,7 +15,12 @@ def euclidean_distance(x, y, p = 2):
         x,y: vectors Rp
         p: norm in which we are interested
     """
-    return (np.sum(x-y, axis = 1)**p)**(1./p) # returns all distances from x to vector y
+    distanz = []
+
+    for k in range(np.shape(y)[0]):
+        distanz.append((np.sum(x-y[k])**p)**(1./p))
+
+    return np.array(distanz)
 
 def most_common(l):
     """
@@ -81,26 +87,46 @@ class kNN:
             Second loop: for each element in the list take the most
             common neighbour (cut when you count k elements)
         """
+        neighbour_list = np.array(neighbour_list)
+        neighbour_list = neighbour_list.reshape(np.shape(x_test)[0],np.shape(self.x_train)[0])
+
 
         for element in neighbour_list:
-            neighbour.append(most_common(element[:self.k]))
+            neighbour.append(most_common(list(element[:self.k])))
         
-        return neighbour
+        return np.array(neighbour)
 
     def loss_function(self, x_test, y_test):
+        self.x_test = x_test
+        self.y_test = y_test
         """
             Method loss_function: compute the binary 0/1 loss function
             of the test data.
             -----------------------------------------------------------
             Input: test features (x_test) and test labels (y_test).
         """
-        y_predicted = knn_prediction(x_test)
-        loss = np.mean(y_predicted == y_test)
+        y_predicted = self.knn_prediction(self.x_test)
+        loss = np.mean(y_predicted == self.y_test)
         return loss
 
+# We can start with small data: important notes explained below
+# First column corresponds to labels, rest of columns correspond to features
 
+train_data_small = np.array(pd.read_csv('Training data/MNIST_train_small.csv'))
+test_data_small = np.array(pd.read_csv('Test data/MNIST_test_small.csv'))
 
+y_train, x_train = train_data_small[:,0], train_data_small[:,1:]
+y_test, x_test = test_data_small[:,0], test_data_small[:,1:]
 
+K = np.arange(1,40,1)
+acc = []
+for k in K:
+    method = kNN(k)
+    method.training_data(x_train, y_train)
+    method.knn_prediction(x_test)
+    acc.append(method.loss_function(x_test, y_test))
 
-    
-
+plt.figure()
+plt.plot(K, acc, label = 'Accuracy of kNN')
+plt.legend()
+plt.show()
