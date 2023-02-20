@@ -12,7 +12,8 @@ import pandas as pd
 def euclidean_distance(x, y, p = 2):
     """
     Inputs:
-        x,y: vectors Rp
+        x: vector in Rp
+        y: collection of vectors in Rp
         p: norm in which we are interested
     """
     distanz = []
