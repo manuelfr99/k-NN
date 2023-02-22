@@ -12,16 +12,10 @@ import pandas as pd
 def euclidean_distance(x, y, p = 2):
     """
     Inputs:
-        x: vector in Rp
-        y: collection of vectors in Rp
+        x,y: vectors Rp
         p: norm in which we are interested
     """
-    distanz = []
-
-    for k in range(np.shape(y)[0]):
-        distanz.append((np.sum(x-y[k])**p)**(1./p))
-
-    return np.array(distanz)
+    return (np.sum((x-y)**p, axis = 1))**(1./p)
 
 def most_common(l):
     """
@@ -97,7 +91,7 @@ class kNN:
         
         return np.array(neighbour)
 
-    def loss_function(self, x_test, y_test):
+    def loss_function_test(self, x_test, y_test):
         self.x_test = x_test
         self.y_test = y_test
         """
@@ -109,6 +103,14 @@ class kNN:
         y_predicted = self.knn_prediction(self.x_test)
         loss = np.mean(y_predicted == self.y_test)
         return loss
+    
+    def loss_function_train(self, x_train, y_train):
+        """
+            Computation of the loss function on training data
+        """
+        y_pred = self.knn_prediction(self.x_train)
+        loss = np.mean(y_pred == self.y_train)
+        return loss
 
 # We can start with small data: important notes explained below
 # First column corresponds to labels, rest of columns correspond to features
@@ -119,15 +121,25 @@ test_data_small = np.array(pd.read_csv('Test data/MNIST_test_small.csv'))
 y_train, x_train = train_data_small[:,0], train_data_small[:,1:]
 y_test, x_test = test_data_small[:,0], test_data_small[:,1:]
 
-K = np.arange(1,40,1)
-acc = []
+K = np.arange(1,50,1)
+acc_test = []
+acc_train = []
+from time import time
 for k in K:
+    start = time()
     method = kNN(k)
     method.training_data(x_train, y_train)
     method.knn_prediction(x_test)
-    acc.append(method.loss_function(x_test, y_test))
+    acc_test.append(method.loss_function_test(x_test, y_test))
+    acc_train.append(method.loss_function_train(x_train, y_train))
+    end = time()
+    print('Ellapsed time t = ', end - start, ' s')
 
 plt.figure()
-plt.plot(K, acc, label = 'Accuracy of kNN')
+plt.plot(K, acc_test, label = 'Accuracy of kNN test data')
+plt.plot(K, acc_train, label = 'Accuracy of kNN train data')
 plt.legend()
 plt.show()
+
+
+
