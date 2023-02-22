@@ -12,7 +12,7 @@ import pandas as pd
 def euclidean_distance(x, y, p = 2):
     """
     Inputs:
-        x,y: vectors Rp
+        x,y: vectors 
         p: norm in which we are interested
     """
     return (np.sum((x-y)**p, axis = 1))**(1./p)
