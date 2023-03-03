@@ -10,17 +10,19 @@ import pandas as pd
 """
 
 def euclidean_distance(x, y, p = 2):
-    """
+    """                                     
     Inputs:
-        x,y: vectors 
+        x,y: vectors Rp
         p: norm in which we are interested
     """
     return (np.sum((x-y)**p, axis = 1))**(1./p)
 
 def most_common(l):
     """
-        Most common element in list
+        Most common element in list, is this computationally efficient?
     """
+    # This approach chooses the smallest label of the repeated in case there are
+    # any ties
     return max(set(l), key=l.count)
 
 
@@ -56,7 +58,7 @@ class kNN:
         self.x_train = x_train
         self.y_train = y_train
     
-    def knn_prediction(self, x_test):
+    def knn_prediction(self, x_test, y_test):
         """
             Method knn_prediction: performs a prediction to select the most
             common neighbour of a point.
@@ -64,32 +66,15 @@ class kNN:
             Input: x_test, set of data in which we are interested on making
             predictions.
         """
-        neighbour_list = []
-
-        """
-            First loop: append to a list all labels based on
-            sorted distances.
-        """
-
-        for x in x_test:
-            distance = self.metric(x, self.x_train) 
-            for i, j in sorted(zip(distance, self.y_train)):
-                neighbour_list.append(j)
-        
         neighbour = []
-
-        """
-            Second loop: for each element in the list take the most
-            common neighbour (cut when you count k elements)
-        """
-        neighbour_list = np.array(neighbour_list)
-        neighbour_list = neighbour_list.reshape(np.shape(x_test)[0],np.shape(self.x_train)[0])
-
-
-        for element in neighbour_list:
-            neighbour.append(most_common(list(element[:self.k])))
         
-        return np.array(neighbour)
+        for x in x_test:
+            distance = np.linalg.norm(x-x_train, axis = 1) # only valid if p = 2
+            sorted_indices = np.argpartition(distance, self.k)[:self.k+1]
+            labels = y_train[sorted_indices]
+            neighbour.append(most_common(list(labels)))
+        
+        return neighbour
 
     def loss_function_test(self, x_test, y_test):
         self.x_test = x_test
@@ -100,16 +85,16 @@ class kNN:
             -----------------------------------------------------------
             Input: test features (x_test) and test labels (y_test).
         """
-        y_predicted = self.knn_prediction(self.x_test)
-        loss = np.mean(y_predicted == self.y_test)
+        y_predicted = self.knn_prediction(self.x_test, self.y_test)
+        loss = np.mean(y_predicted != self.y_test)
         return loss
     
     def loss_function_train(self, x_train, y_train):
         """
             Computation of the loss function on training data
         """
-        y_pred = self.knn_prediction(self.x_train)
-        loss = np.mean(y_pred == self.y_train)
+        y_pred = self.knn_prediction(self.x_train, self.y_test)
+        loss = np.mean(y_pred != self.y_train)
         return loss
 
 # We can start with small data: important notes explained below
@@ -121,25 +106,28 @@ test_data_small = np.array(pd.read_csv('Test data/MNIST_test_small.csv'))
 y_train, x_train = train_data_small[:,0], train_data_small[:,1:]
 y_test, x_test = test_data_small[:,0], test_data_small[:,1:]
 
-K = np.arange(1,50,1)
+K = np.arange(1,20+1,1)
 acc_test = []
 acc_train = []
+
 from time import time
+
 for k in K:
+
     start = time()
     method = kNN(k)
     method.training_data(x_train, y_train)
-    method.knn_prediction(x_test)
+    method.knn_prediction(x_test, y_test)
     acc_test.append(method.loss_function_test(x_test, y_test))
     acc_train.append(method.loss_function_train(x_train, y_train))
     end = time()
     print('Ellapsed time t = ', end - start, ' s')
 
 plt.figure()
-plt.plot(K, acc_test, label = 'Accuracy of kNN test data')
-plt.plot(K, acc_train, label = 'Accuracy of kNN train data')
+plt.plot(K, acc_test, label = 'Empirical Risk of kNN test data')
+plt.plot(K, acc_train, label = 'Empirical Risk of kNN train data')
+plt.grid()
+plt.xlabel('Number of k neighbours')
+plt.ylabel('Empirical Risk $R(\\hat{f}_n)$')
 plt.legend()
 plt.show()
-
-
-
